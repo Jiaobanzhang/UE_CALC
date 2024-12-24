@@ -54,7 +54,7 @@ class HotelIndexTest {
     @BeforeEach
     void setUp() {
         client = new RestHighLevelClient(RestClient.builder(
-                HttpHost.create("http://10.22.49.4:9200/")
+                HttpHost.create("http://10.22.49.4:9200")
         ));
     }
 
