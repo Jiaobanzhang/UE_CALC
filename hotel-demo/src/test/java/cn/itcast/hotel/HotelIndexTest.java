@@ -22,13 +22,14 @@ class HotelIndexTest {
 
     private RestHighLevelClient client;
 
+    // 测试用来创建索引库
     @Test
     void testCreateIndex() throws IOException {
         // 1.准备Request      PUT /hotel
         CreateIndexRequest request = new CreateIndexRequest("hotel");
-        // 2.准备请求参数
+        // 2.准备请求参数, 作用是将 MAPPING_TEMPLATE 中的内容以 JSON 格式 提交到 Elasticsearch。
         request.source(MAPPING_TEMPLATE, XContentType.JSON);
-        // 3.发送请求
+        // 3.发送请求, indices()方法返回的对象包含索引库操作的所有方法
         client.indices().create(request, RequestOptions.DEFAULT);
     }
 
@@ -53,7 +54,7 @@ class HotelIndexTest {
     @BeforeEach
     void setUp() {
         client = new RestHighLevelClient(RestClient.builder(
-                HttpHost.create("http://192.168.150.101:9200")
+                HttpHost.create("http://10.22.49.4:9200/")
         ));
     }
 

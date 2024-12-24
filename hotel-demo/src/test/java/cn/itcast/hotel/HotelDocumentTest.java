@@ -106,7 +106,7 @@ class HotelDocumentTest {
     @BeforeEach
     void setUp() {
         client = new RestHighLevelClient(RestClient.builder(
-                HttpHost.create("http://192.168.150.101:9200")
+                HttpHost.create("http://10.22.49.4:9200")
         ));
     }
 
