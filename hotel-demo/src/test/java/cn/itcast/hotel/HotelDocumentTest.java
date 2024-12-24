@@ -32,6 +32,7 @@ class HotelDocumentTest {
     @Autowired
     private IHotelService hotelService;
 
+    // 测试新增文档
     @Test
     void testAddDocument() throws IOException {
         // 1.查询数据库hotel数据
@@ -41,11 +42,15 @@ class HotelDocumentTest {
         // 3.转JSON
         String json = JSON.toJSONString(hotelDoc);
 
-        // 1.准备Request
+        // 1.准备Request POST/索引库名/_doc/文档id(如果不写 id, 系统会自动给你生成一个 文档id)
+        // hotelDoc.getId() 是获取文档的主键 ID
+        // 调用 toString() 将 ID 转换为字符串形式（Elasticsearch 文档 ID 必须是字符串）
         IndexRequest request = new IndexRequest("hotel").id(hotelDoc.getId().toString());
         // 2.准备请求参数DSL，其实就是文档的JSON字符串
         request.source(json, XContentType.JSON);
         // 3.发送请求
+        // client 是 Elasticsearch 客户端实例,
+        // client.index() 用于将一条文档存储到 Elasticsearch 的索引中
         client.index(request, RequestOptions.DEFAULT);
     }
 
@@ -58,10 +63,12 @@ class HotelDocumentTest {
         // 3.解析响应结果
         String json = response.getSourceAsString();
 
+        // 将 结果转换成 HotelDoc 类型,并打印出来
         HotelDoc hotelDoc = JSON.parseObject(json, HotelDoc.class);
         System.out.println("hotelDoc = " + hotelDoc);
     }
 
+    // 删除文档
     @Test
     void testDeleteDocumentById() throws IOException {
         // 1.准备Request      // DELETE /hotel/_doc/{id}
@@ -70,6 +77,7 @@ class HotelDocumentTest {
         client.delete(request, RequestOptions.DEFAULT);
     }
 
+    // 修改文档
     @Test
     void testUpdateById() throws IOException {
         // 1.准备Request
@@ -82,14 +90,15 @@ class HotelDocumentTest {
         client.update(request, RequestOptions.DEFAULT);
     }
 
+    // 批量将文档导入索引库
     @Test
     void testBulkRequest() throws IOException {
-        // 查询所有的酒店数据
+        // 从 mysql 中查询所有的酒店数据
         List<Hotel> list = hotelService.list();
 
         // 1.准备Request
         BulkRequest request = new BulkRequest();
-        // 2.准备参数
+        // 2.对每一条sql中的数据都准备参数, 批量将sql查询到的所有数据都转换成 request, 并插入到索引库中
         for (Hotel hotel : list) {
             // 2.1.转为HotelDoc
             HotelDoc hotelDoc = new HotelDoc(hotel);

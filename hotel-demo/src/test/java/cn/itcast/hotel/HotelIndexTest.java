@@ -1,3 +1,6 @@
+/**
+ * 该测试是用来测试 使用 RestAPI 增加, 删除, 判断索引库是否存在 这三个操作
+ */
 package cn.itcast.hotel;
 
 import org.apache.http.HttpHost;
@@ -33,6 +36,7 @@ class HotelIndexTest {
         client.indices().create(request, RequestOptions.DEFAULT);
     }
 
+    // 判断索引库是否存在
     @Test
     void testExistsIndex() throws IOException {
         // 1.准备Request
@@ -42,6 +46,8 @@ class HotelIndexTest {
 
         System.out.println(isExists ? "存在" : "不存在");
     }
+
+    // 删除索引库
     @Test
     void testDeleteIndex() throws IOException {
         // 1.准备Request
