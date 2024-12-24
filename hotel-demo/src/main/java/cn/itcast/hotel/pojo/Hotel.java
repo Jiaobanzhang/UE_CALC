@@ -1,3 +1,8 @@
+/**
+ * 这个类是和 sql 数据库中的表结构相同
+ * 但是这个类和 es 索引库的定义还有点区别, 需要将 longitude 和 latitude 统一合并成 location
+ * 所以重新建立了另外一个类 HotelDoc
+ */
 package cn.itcast.hotel.pojo;
 
 import com.baomidou.mybatisplus.annotation.IdType;
