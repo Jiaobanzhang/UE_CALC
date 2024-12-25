@@ -1,3 +1,9 @@
+/**
+ * 这个测试是用来对文档的查询进行测试
+ * 可以理解为对 sql 表中的数据进行查询
+ * HotelDocumentTest 只是用于根据 id 对文档进行查询
+ * 而这个 HotelSearchTest 适用于根据字段对文档进行查询
+ */
 package cn.itcast.hotel;
 
 import cn.itcast.hotel.pojo.HotelDoc;
@@ -18,6 +24,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.util.Map;
@@ -27,11 +34,13 @@ class HotelSearchTest {
 
     private RestHighLevelClient client;
 
+    // GET/indexName/_search
     @Test
     void testMatchAll() throws IOException {
         // 1.准备request
         SearchRequest request = new SearchRequest("hotel");
-        // 2.准备请求参数
+        // 2.准备请求参数 match_all
+        // 利用`request.source()`构建DSL
         request.source().query(QueryBuilders.matchAllQuery());
         // 3.发送请求，得到响应
         SearchResponse response = client.search(request, RequestOptions.DEFAULT);
@@ -39,6 +48,7 @@ class HotelSearchTest {
         handleResponse(response);
     }
 
+    // 进行 multi_match
     @Test
     void testMatch() throws IOException {
         // 1.准备request
@@ -52,6 +62,7 @@ class HotelSearchTest {
         handleResponse(response);
     }
 
+    // 进行精确查询测试
     @Test
     void testBool() throws IOException {
         // 1.准备request
@@ -65,6 +76,8 @@ class HotelSearchTest {
         boolQuery.filter(QueryBuilders.rangeQuery("price").lte(250));
         */
 
+        // term : 词条精确匹配
+        // range : 范围查询
         request.source().query(
                 QueryBuilders.boolQuery()
                         .must(QueryBuilders.termQuery("city", "杭州"))
@@ -86,7 +99,7 @@ class HotelSearchTest {
         // 2.1.query
         request.source()
                 .query(QueryBuilders.matchAllQuery());
-        // 2.2.排序sort
+        // 2.2.排序sort 上升排序
         request.source().sort("price", SortOrder.ASC);
         // 2.3.分页 from\size
         request.source().from((page - 1) * size).size(size);
@@ -97,6 +110,7 @@ class HotelSearchTest {
         handleResponse(response);
     }
 
+    // 高亮查询必须使用全文检索查询，并且要有搜索关键字
     @Test
     void testHighlight() throws IOException {
         // 1.准备request
@@ -127,13 +141,15 @@ class HotelSearchTest {
             HotelDoc hotelDoc = JSON.parseObject(json, HotelDoc.class);
             // 4.6.处理高亮结果
             // 1)获取高亮map
-            Map<String, HighlightField> map = hit.getHighlightFields();
-            // 2）根据字段名，获取高亮结果
-            HighlightField highlightField = map.get("name");
-            // 3）获取高亮结果字符串数组中的第1个元素
-            String hName = highlightField.getFragments()[0].toString();
-            // 4）把高亮结果放到HotelDoc中
-            hotelDoc.setName(hName);
+            Map<String, HighlightField> highlightFields = hit.getHighlightFields();
+            if(!CollectionUtils.isEmpty(highlightFields)){
+                // 2）根据字段名，获取高亮结果
+                HighlightField highlightField = highlightFields.get("name");
+                // 3）获取高亮结果字符串数组中的第1个元素
+                String hName = highlightField.getFragments()[0].toString();
+                // 4）把高亮结果放到HotelDoc中
+                hotelDoc.setName(hName);
+            }
             // 4.7.打印
             System.out.println(hotelDoc);
         }
