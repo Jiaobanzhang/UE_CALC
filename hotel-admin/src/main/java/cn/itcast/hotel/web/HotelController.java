@@ -1,3 +1,7 @@
+/**
+ * Controller 层, 用于接收前端的请求
+ * 同时使用 rabbitTemplate 接口, 用于给 RabbitMQ 发送消息
+ */
 package cn.itcast.hotel.web;
 
 import cn.itcast.hotel.constants.MqConstants;
@@ -18,7 +22,7 @@ public class HotelController {
     @Autowired
     private IHotelService hotelService;
     @Autowired
-    private RabbitTemplate rabbitTemplate;
+    private RabbitTemplate rabbitTemplate; // rabbitTemplate 是rabbitMQ的API接口
 
     @GetMapping("/{id}")
     public Hotel queryById(@PathVariable("id") Long id){
@@ -38,7 +42,7 @@ public class HotelController {
     @PostMapping
     public void saveHotel(@RequestBody Hotel hotel){
         hotelService.save(hotel);
-
+        // 发送消息需要知道 交换机, routingKey, 和交换的内容(这里只发id, 因为rabbitMQ 是基于内存的, 发送太多数据会占用内存)
         rabbitTemplate.convertAndSend(MqConstants.HOTEL_EXCHANGE, MqConstants.HOTEL_INSERT_KEY, hotel.getId());
     }
 
