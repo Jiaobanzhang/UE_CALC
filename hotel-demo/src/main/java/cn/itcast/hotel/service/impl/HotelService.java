@@ -1,3 +1,7 @@
+/**
+ * 这里实现了 索引库 查询, 筛选, 算分的功能 search()
+ * 同时实现了根据 rabbitMQ 中队列的事件对索引库进行更新删除的功能 insertById(), deleteById()
+ */
 package cn.itcast.hotel.service.impl;
 
 import cn.itcast.hotel.mapper.HotelMapper;
@@ -173,8 +177,10 @@ public class HotelService extends ServiceImpl<HotelMapper, Hotel> implements IHo
         return new PageResult(total, hotels);
     }
 
+
+    // 对索引库中数据进行删除操作
     @Override
-    public void insertById(Long id) {
+    public void deleteById(Long id) {
         try {
             // 1.准备Request
             DeleteRequest request = new DeleteRequest("hotel", id.toString());
@@ -185,8 +191,9 @@ public class HotelService extends ServiceImpl<HotelMapper, Hotel> implements IHo
         }
     }
 
+    // 对索引库中数据进行更新操作
     @Override
-    public void deleteById(Long id) {
+    public void insertById(Long id) {
         try {
             // 0.根据id查询酒店数据
             Hotel hotel = getById(id);
