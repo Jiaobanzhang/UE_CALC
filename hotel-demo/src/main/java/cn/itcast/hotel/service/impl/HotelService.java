@@ -43,13 +43,15 @@ public class HotelService extends ServiceImpl<HotelMapper, Hotel> implements IHo
     @Autowired
     private RestHighLevelClient restHighLevelClient;
 
+    // 查询语句
     @Override
     public PageResult search(RequestParams params) {
         try {
             // 1.准备Request
             SearchRequest request = new SearchRequest("hotel");
-            // 2.准备请求参数
-            // 2.1.query
+
+            // 2.准备 DSL 以及 搜索结果处理 (query 搜索部分 + sort 部分 + highlight 部分)
+            // 2.1.query, 关键字搜索, 调用下面的 buildBasicQuery 函数
             buildBasicQuery(params, request);
             // 2.2.分页
             int page = params.getPage();
@@ -57,6 +59,7 @@ public class HotelService extends ServiceImpl<HotelMapper, Hotel> implements IHo
             request.source().from((page - 1) * size).size(size);
             // 2.3.距离排序
             String location = params.getLocation();
+            // 判断位置是否为空, 不为空则根据距离进行排序
             if (StringUtils.isNotBlank(location)) {
                 request.source().sort(SortBuilders
                         .geoDistanceSort("location", new GeoPoint(location))
@@ -64,35 +67,40 @@ public class HotelService extends ServiceImpl<HotelMapper, Hotel> implements IHo
                         .unit(DistanceUnit.KILOMETERS)
                 );
             }
+
             // 3.发送请求
             SearchResponse response = restHighLevelClient.search(request, RequestOptions.DEFAULT);
-            // 4.解析响应
+            // 4.解析响应, 调用下面的 handleResponse 函数
             return handleResponse(response);
         } catch (IOException e) {
             throw new RuntimeException("搜索数据失败", e);
         }
     }
 
+    // 准备 DSL 的搜索条件, 这里是 query 部分
     private void buildBasicQuery(RequestParams params, SearchRequest request) {
-        // 1.准备Boolean查询
+        // 1.准备Boolean查询 (复合查询)
         BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 
-        // 1.1.关键字搜索，match查询，放到must中
+        // 1.1.关键字搜索，match查询，放到must表示需要算分
         String key = params.getKey();
         if (StringUtils.isNotBlank(key)) {
-            // 不为空，根据关键字查询
+            // 如果关键字不为空，根据关键字查询
+            // must：表示查询中的“必须满足”条件
+            // matchQuery : 模糊查询：当需要对分词后的字段进行模糊匹配时
             boolQuery.must(QueryBuilders.matchQuery("all", key));
         } else {
-            // 为空，查询所有
+            // 关键字为空，使用 matchAll 查询所有
             boolQuery.must(QueryBuilders.matchAllQuery());
         }
 
-        // 1.2.品牌
+        // 1.2.品牌, 使用 term 精确过滤
         String brand = params.getBrand();
         if (StringUtils.isNotBlank(brand)) {
+            // filter 也是必须匹配的意思, 和must 的区别在于不需要参与算分
             boolQuery.filter(QueryBuilders.termQuery("brand", brand));
         }
-        // 1.3.城市
+        // 1.3.城市, 使用 term 精确过滤
         String city = params.getCity();
         if (StringUtils.isNotBlank(city)) {
             boolQuery.filter(QueryBuilders.termQuery("city", city));
@@ -102,15 +110,16 @@ public class HotelService extends ServiceImpl<HotelMapper, Hotel> implements IHo
         if (StringUtils.isNotBlank(starName)) {
             boolQuery.filter(QueryBuilders.termQuery("starName", starName));
         }
-        // 1.5.价格范围
+        // 1.5.价格范围 使用 rangeQuery 过滤
         Integer minPrice = params.getMinPrice();
         Integer maxPrice = params.getMaxPrice();
         if (minPrice != null && maxPrice != null) {
             maxPrice = maxPrice == 0 ? Integer.MAX_VALUE : maxPrice;
+            //
             boolQuery.filter(QueryBuilders.rangeQuery("price").gte(minPrice).lte(maxPrice));
         }
 
-        // 2.算分函数查询
+        // 2.算分函数查询 DSL
         FunctionScoreQueryBuilder functionScoreQuery = QueryBuilders.functionScoreQuery(
                 boolQuery, // 原始查询，boolQuery
                 new FunctionScoreQueryBuilder.FilterFunctionBuilder[]{ // function数组
@@ -125,6 +134,7 @@ public class HotelService extends ServiceImpl<HotelMapper, Hotel> implements IHo
         request.source().query(functionScoreQuery);
     }
 
+    // 用于处理响应结果
     private PageResult handleResponse(SearchResponse response) {
         SearchHits searchHits = response.getHits();
         // 4.1.总条数
@@ -151,7 +161,7 @@ public class HotelService extends ServiceImpl<HotelMapper, Hotel> implements IHo
                     hotelDoc.setName(hName);
                 }
             }
-            // 4.8.排序信息
+            // 4.8.排序信息, 返回酒店距自己的距离
             Object[] sortValues = hit.getSortValues();
             if (sortValues.length > 0) {
                 hotelDoc.setDistance(sortValues[0]);
