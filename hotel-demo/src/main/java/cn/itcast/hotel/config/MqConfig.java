@@ -2,6 +2,7 @@ package cn.itcast.hotel.config;
 
 /**
  * @autor: 我亦无他，唯手熟尔
+ * 这里是用来 定义队列、交换机和绑定
  */
 
 import cn.itcast.hotel.constants.MqConstants;
