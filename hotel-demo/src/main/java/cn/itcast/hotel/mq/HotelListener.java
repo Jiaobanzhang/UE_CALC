@@ -1,3 +1,6 @@
+/**
+ * 监听rabbitMQ 中队列 Queue 的业务
+ */
 package cn.itcast.hotel.mq;
 
 import cn.itcast.hotel.constants.MqConstants;
